@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
 import rospy
+from tf import transformations
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
-from geometry_msgs.msg import TwistStamped
-import math
+from geometry_msgs.msg import TwistStamped, PoseStamped
+from styx_msgs.msg import Lane
+
+from math import cos, sin
+import numpy as np
 
 from twist_controller import Controller
 
@@ -32,9 +36,18 @@ that we have created in the `__init__` function.
 '''
 
 class DBWNode(object):
+    """
+    *** STEP 3 ****
+    Actuate the throttle, steering and brake to successfully navigate the waypoints
+    with the correct target velocity
+    """
     def __init__(self):
         rospy.init_node('dbw_node')
 
+        # variables
+        self.current_ego_pose = None # ego car current position and orientation, type: pose
+
+        # ROS server parameters
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
         brake_deadband = rospy.get_param('~brake_deadband', .1)
@@ -46,6 +59,7 @@ class DBWNode(object):
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
+        # Publishers
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
         self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd',
@@ -53,10 +67,26 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+        # Subscribe to all the topics you need to
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb, queue_size=1)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb, queue_size=1)
+        rospy.Subscriber('/final_waypoints', Lane, self.waypoints_cb, queue_size=1)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb, queue_size=1)
+
+        # Subscribed messages
+        self.twist_cmd = None
+        self.twist_cmd_linear_velocity = None
+        self.twist_cmd_angular_velocity = None
+        self.velocity = None
+        self.current_linear_velocity = None
+        self.current_angular_velocity = None
+        self.dbw_enabled = False
+        self.waypoints = None
+
+
         # TODO: Create `TwistController` object
         self.controller = Controller()
-
-        # TODO: Subscribe to all the topics you need to
 
         self.loop()
 
@@ -91,6 +121,40 @@ class DBWNode(object):
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
+
+    ### Callback functions
+    def pose_cb(self, message):
+        self.current_ego_pose = message.pose
+
+    def twist_cb(self, message):
+        self.twist_cmd = message.twist
+        # only x velocity is obtained
+        self.twist_cmd_linear_velocity = message.twist.linear.x
+        # only yaw is obtained since it is 2D space
+        self.twist_cmd_angular_velocity = message.twist.angular.z
+
+    def velocity_cb(self, message):
+        self.velocity = message.twist
+        self.current_linear_velocity = message.twist.linear.x
+        self.current_angular_velocity = message.twist.angular.z
+
+    def waypoints_cb(self, message):
+        self.waypoints = message.waypoints
+
+    def dbw_enabled_cb(self, message):
+        """
+        Enabled self-driving mode will publish throttle, steer and brake mode.
+        """
+
+        self.dbw_enabled = bool(message.data)
+        if self.dbw_enabled:
+            rospy.logwarn("**** ============================ ****")
+            rospy.logwarn("**** Self-Driving Mode Activated  ****")
+            rospy.logwarn("**** ============================ ****")
+        else:
+            rospy.logwarn("**** ============================= ****")
+            rospy.logwarn("**** Manual Driving Mode Activated ****")
+            rospy.logwarn("**** ============================= ****")
 
 
 if __name__ == '__main__':
