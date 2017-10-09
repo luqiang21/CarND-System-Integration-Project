@@ -70,7 +70,7 @@ class DBWNode(object):
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
-	    if 1:
+            if 1:
                self.publish(throttle, brake, steering)
             rate.sleep()
 

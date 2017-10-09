@@ -72,6 +72,13 @@ class WaypointUpdater(object):
 			lane = self.create_lane(self.frame_id, lookahead_waypoints)
 			self.final_waypoints_pub.publish(lane)
 
+			### debug ###
+			rospy.logwarn("ego car position")
+			rospy.logwarn(self.current_ego_pose.position)
+			for i in range(len(lookahead_waypoints)-140):
+				rospy.logfatal(i)
+				rospy.logwarn(lookahead_waypoints[i].pose.pose.position)
+
 	def pose_cb(self, msg):
 		self.current_ego_pose = msg.pose # msg Type is PoseStamped, has header and pose.
 		self.frame_id = msg.header.frame_id # TODO explain frame_id
