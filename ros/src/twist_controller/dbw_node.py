@@ -34,7 +34,7 @@ Once you have the proposed throttle, brake, and steer values, publish it on the 
 that we have created in the `__init__` function.
 
 '''
-
+POINTS_TO_FIT = 10
 class DBWNode(object):
     """
     *** STEP 3 ****
@@ -82,7 +82,7 @@ class DBWNode(object):
         self.current_linear_velocity = None
         self.current_angular_velocity = None
         self.dbw_enabled = False
-        self.waypoints = None
+        self.waypoints = None # final waypoints
 
 
         # TODO: Create `TwistController` object
@@ -91,17 +91,29 @@ class DBWNode(object):
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(10) # 50Hz
+        rospy.logfatal("dbw1 node is here *****************************************")
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
+            data = [self.velocity, self.waypoints, self.current_ego_pose]
+            all_variable = all([x is not None for x in data])
+
+            if not all_variable:
+                continue
+            rospy.logfatal("dbw loop")
+            rospy.logwarn("cte  "+str(self.cte_calc(self.current_ego_pose, self.waypoints)))
+
             throttle, brake, steering = self.controller.control()            #                                                     <proposed angular velocity>,
             #                                                     <current linear velocity>,
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
             if 1:
-               self.publish(throttle, brake, steering)
+                rospy.logfatal("publishing throttle, brake, and steering.")
+                self.publish(throttle, brake, steering)
+                rospy.logfatal("published.")
+
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -121,6 +133,57 @@ class DBWNode(object):
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
+
+    def cte_calc(self, pose, waypoints):
+        """
+        Calculate the distance from the ego car's current position to the waypoints path
+        """
+
+        x_coords, y_coords = self.transform_waypoints(pose, waypoints, POINTS_TO_FIT)
+        # 3 degree polynomial fitting
+        coefficients = np.polyfit(x_coords, y_coords, 3)
+        # distance between car position and transformed waypoint
+        distance = np.polyval(coefficients, 5.0) # TODO why 5.0
+        return distance
+
+    def transform_waypoints(self, pose, waypoints, points_to_use=None):
+        """
+        Do transformation that sets the origin of waypoints to the ego car's position,
+        oriented along x-axis and returns transformed coordinates.
+        """
+
+        x_coords = []
+        y_coords = []
+
+        _, _, yaw = self.get_euler(pose)
+        origin_x = pose.position.x
+        origin_y = pose.position.y
+
+        if points_to_use is None:
+            points_to_use = len(waypoints)
+
+        for i in range(points_to_use):
+            shift_x = waypoints[i].pose.pose.position.x - origin_x
+            shift_y = waypoints[i].pose.pose.position.y - origin_y
+
+            x = shift_x * cos(0 - yaw) - shift_y * sin(0 - yaw) # TODO why 0 - yaw?
+            y = shift_x * sin(0 - yaw) + shift_y * cos(0 - yaw)
+
+            x_coords.append(x)
+            y_coords.append(y)
+        #########################################
+        rospy.logwarn(x_coords)
+        rospy.logwarn(y_coords)
+        ############################################
+        return x_coords, y_coords
+
+    def get_euler(self, pose):
+		"""
+		return roll(x), pitch(y), yaw(z) from a Quaternion
+		"""
+		return transformations.euler_from_quaternion(
+			[pose.orientation.x, pose.orientation.y, pose.orientation.z,
+			pose.orientation.w])
 
     ### Callback functions
     def pose_cb(self, message):
