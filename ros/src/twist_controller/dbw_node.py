@@ -88,14 +88,14 @@ class DBWNode(object):
 
 
         # TODO: Create `TwistController` object
-        self.controller = Controller()
+        self.controller = Controller(self.wheel_base, self.steer_ratio,
+                                    self.max_lat_accel, self.max_steer_angle)
 
         self.loop()
 
     def loop(self):
         rate = rospy.Rate(10) # 50Hz
         while not rospy.is_shutdown():
-            rospy.logfatal("dbw while loop.")
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
             data = [self.velocity, self.waypoints, self.current_ego_pose]
@@ -192,8 +192,8 @@ class DBWNode(object):
             x_coords.append(x)
             y_coords.append(y)
         #########################################
-        rospy.logwarn(x_coords)
-        rospy.logwarn(y_coords)
+        # rospy.logwarn(x_coords)
+        # rospy.logwarn(y_coords)
         ############################################
         return x_coords, y_coords
 
