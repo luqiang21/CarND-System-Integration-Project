@@ -8,12 +8,13 @@ class Controller(object):
         # TODO: Implement
         pass
 
-    def control(self, *args, **kwargs):
+    def control(self, cte, dbw_enabled, twist_cmd_linear_velocity,
+                twist_cmd_angular_velocity, current_linear_velocity):
         # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
-        return 0.
+        return 0.0
 
-    def control_speed_based_on_proportional_throttle_brake(target_velocity,
+    def control_speed_based_on_proportional_throttle_brake(self, target_velocity,
         current_linear_velocity, max_throttle, max_brake):
 
-        return 0.8, 0
+        return 0.8, 0.0
