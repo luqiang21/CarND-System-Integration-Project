@@ -31,7 +31,7 @@ class Controller(object):
         self.yaw_controller = YawController(wb, sr, 0.0, mla, msa)
 
         # create / fine tune pid steering controller
-        self.steering_correction_pid = pid.PID（kp=0.5, ki=0.004, kd=0.25, mn=-msa, mx=msa)
+        self.steering_correction_pid = pid.PID(kp=0.5, ki=0.004, kd=0.25, mn=-msa, mx=msa)
 
         self.timestamp = rospy.get_time()
 
@@ -66,7 +66,7 @@ class Controller(object):
         return 0.0
 
     def control_speed_based_on_proportional_throttle_brake(self, target_linear_velocity,
-        current_linear_velocity, max_throttle, max_brake):
+        current_velocity, max_throttle_proportional, max_brake_proportional):
         """
         Manipulates throttle, brake based on difference between target and current
         linear velocity, limited by dbw_node parameters max_throttle_proportional

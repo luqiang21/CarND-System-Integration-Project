@@ -96,15 +96,18 @@ class DBWNode(object):
     def loop(self):
         rate = rospy.Rate(10) # 50Hz
         while not rospy.is_shutdown():
+
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
             data = [self.velocity, self.waypoints, self.current_ego_pose]
             all_variable = all([x is not None for x in data])
 
             if not all_variable:
+	        rospy.logfatal("***------------------------")
                 continue
-
+	    rospy.logfatal("**********************")
             if len(self.waypoints) >= POINTS_TO_FIT:
+	        rospy.logfatal("------------------------")
                 # under car frame, target speed at x direction of the first
                 # waypoint within final_waypoints
                 target_velocity = self.waypoints[0].twist.twist.linear.x

@@ -75,7 +75,7 @@ class WaypointUpdater(object):
 			### debug ###
 			rospy.logwarn("ego car position")
 			rospy.logwarn(self.current_ego_pose.position)
-			for i in range(len(lookahead_waypoints)-197):
+			for i in range(len(lookahead_waypoints)-199):
 				rospy.logfatal(i)
 				rospy.logwarn(lookahead_waypoints[i].pose.pose.position)
 
