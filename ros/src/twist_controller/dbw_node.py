@@ -48,16 +48,18 @@ class DBWNode(object):
         self.current_ego_pose = None # ego car current position and orientation, type: pose
 
         # ROS server parameters
-        vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
-        fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
-        brake_deadband = rospy.get_param('~brake_deadband', .1)
-        decel_limit = rospy.get_param('~decel_limit', -5)
-        accel_limit = rospy.get_param('~accel_limit', 1.)
-        wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
-        wheel_base = rospy.get_param('~wheel_base', 2.8498)
-        steer_ratio = rospy.get_param('~steer_ratio', 14.8)
-        max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
-        max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+        self.vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
+        self.fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
+        self.brake_deadband = rospy.get_param('~brake_deadband', .1)
+        self.decel_limit = rospy.get_param('~decel_limit', -5)
+        self.accel_limit = rospy.get_param('~accel_limit', 1.)
+        self.wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
+        self.wheel_base = rospy.get_param('~wheel_base', 2.8498)
+        self.steer_ratio = rospy.get_param('~steer_ratio', 14.8)
+        self.max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
+        self.max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+        self.max_throttle = rospy.get_param("~max_throttle_proportional", 0.8)
+        self.max_brake = rospy.get_param("~max_brake_proportional", -0.8)
 
         # Publishers
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
@@ -92,7 +94,6 @@ class DBWNode(object):
 
     def loop(self):
         rate = rospy.Rate(10) # 50Hz
-        rospy.logfatal("dbw1 node is here *****************************************")
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
@@ -101,19 +102,36 @@ class DBWNode(object):
 
             if not all_variable:
                 continue
-            rospy.logfatal("dbw loop")
-            rospy.logwarn("cte  "+str(self.cte_calc(self.current_ego_pose, self.waypoints)))
 
-            throttle, brake, steering = self.controller.control()            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            if 1:
-                rospy.logfatal("publishing throttle, brake, and steering.")
+            if len(self.waypoints) >= POINTS_TO_FIT:
+                # under car frame, target speed at x direction of the first
+                # waypoint within final_waypoints
+                target_velocity = self.waypoints[0].twist.twist.linear.x
+
+                current_linear_velocity = self.velocity.linear.x
+
+                # get corrected steering using twist_controller
+                cte = self.cte_calc(self.current_ego_pose, self.waypoints)
+                steering = self.controller.control(cte, self.dbw_enabled, self.twist_cmd_linear_velocity,
+                            self.twist_cmd_angular_velocity, current_linear_velocity)
+
+                throttle, brake = self.controller.control_speed_based_on_proportional_throttle_brake(
+                                    target_velocity,
+                                    current_linear_velocity,
+                                    self.max_throttle,
+                                    self.max_brake)
+            else:
+                # not enough waypoints, so publish heavy break
+                rospy.logfatal("Number of waypoints received is: ", len(self.waypoints), "is not enough.")
+                throttle, brake, steering = 0, 200, 0
+
+
+
+            if self.dbw_enabled:
                 self.publish(throttle, brake, steering)
-                rospy.logfatal("published.")
+                rospy.logwarn("Published throttle: %s, brake: %s, steering: %s", throttle, brake, steering)
 
+            rospy.logfatal("dbw_node.")
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
