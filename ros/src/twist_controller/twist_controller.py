@@ -51,7 +51,7 @@ class Controller(object):
         self.timestamp = new_timestamp
         if dbw_enabled:
             # calculate new steering angle
-            corrected_steering_angle = self.steering_correction_pid(cte, duration)
+            corrected_steering_angle = self.steering_correction_pid.step(cte, duration)
 
             # get predicted steering angle from waypoints curve
             yaw_steer = self.yaw_controller.get_steering(twist_cmd_linear_velocity,
