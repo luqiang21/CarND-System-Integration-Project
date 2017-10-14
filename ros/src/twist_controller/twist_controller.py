@@ -65,7 +65,30 @@ class Controller(object):
 
         return 0.0
 
-    def control_speed_based_on_proportional_throttle_brake(self, target_velocity,
+    def control_speed_based_on_proportional_throttle_brake(self, target_linear_velocity,
         current_linear_velocity, max_throttle, max_brake):
+        """
+        Manipulates throttle, brake based on difference between target and current
+        linear velocity, limited by dbw_node parameters max_throttle_proportional
+        and max_brake_proportional.
 
-        return 0.8, 0.0
+        """
+        velocity_change_required = target_linear_velocity - current_velocity
+        rospy.logwarn("------")
+        rospy.logwarn("twist_controller.py: velocity_change_required %s = target_linear_velocity %s \
+            - current_velocity %s", velocity_change_required, target_linear_velocity, current_velocity)
+
+        throttle, brake = 0.0, 0.0
+        if velocity_change_required > 0.1:
+            # limit increase in throttle
+            throttle, brake = min(velocity_change_required / target_linear_velocity, max_throttle_proportional), 0.0
+            rospy.logwarn("increase throttle: throttle: %s = min(velocity_change_required %s / target_linear_velocity %s, \
+            max_throttle_proportional %s)", throttle, velocity_change_required, target_linear_velocity, max_throttle_proportional)
+
+        elif velocity_change_required < -0.1:
+            # limit increase in brake
+            throttle, brake = 0,0, min(velocity_change_required / target_linear_velocity, max_brake_proportional)
+            rospy.logwarn("increase brake: brake: %s = min(velocity_change_required %s / target_linear_velocity %s, \
+            max_brake_proportional %s)", brake, velocity_change_required, target_linear_velocity, max_brake_proportional)
+
+        return throttle, brake
