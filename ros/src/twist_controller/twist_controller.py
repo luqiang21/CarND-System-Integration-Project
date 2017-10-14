@@ -57,7 +57,9 @@ class Controller(object):
             yaw_steer = self.yaw_controller.get_steering(twist_cmd_linear_velocity,
                             twist_cmd_angular_velocity, current_linear_velocity)
 
-            steering_angle = corrected_steering_angle + yaw_steer * PREDICTIVE_STEERING
+            # steering_angle = corrected_steering_angle + yaw_steer * PREDICTIVE_STEERING
+            steering_angle =  yaw_steer * PREDICTIVE_STEERING
+
 
             return steering_angle
         else:
