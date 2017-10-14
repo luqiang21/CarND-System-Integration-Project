@@ -1,6 +1,13 @@
 from math import atan
 
 class YawController(object):
+    """
+    CONTROL SUBSYSTEM
+
+    *** STEP 6 ***
+
+    Calculates the appropriate steering angle required by the target velocities for the road curvature
+    """
     def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
         self.wheel_base = wheel_base
         self.steer_ratio = steer_ratio
