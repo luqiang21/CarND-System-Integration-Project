@@ -3,7 +3,7 @@
 import rospy
 from tf import transformations
 from geometry_msgs.msg import PoseStamped
-from styx_msgs.msg import Lane, Waypoint
+from styx_msgs.msg import Lane, Waypoint, TrafficLight, TrafficLightArray
 
 from math import cos, sin
 from copy import deepcopy
@@ -40,7 +40,7 @@ class WaypointUpdater(object):
 		rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
 		rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-		rospy.Subscriber('/vehicle/traffic_lights', Int32, self.traffic_lights_cb)
+		rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
 
 		rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
 
