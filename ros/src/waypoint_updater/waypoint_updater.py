@@ -87,10 +87,10 @@ class WaypointUpdater(object):
 
 			rospy.logwarn("traffic lights:")
 
-			for i in len(self.traffic_lights):
-				logfatal(i)
-				light = traffic_lights[i]
-				rospy.logfatal(light.pose.position)
+			for i, light in enumerate(self.traffic_lights):
+				rospy.logfatal(i)
+
+				rospy.logfatal(light.pose.pose.position)
 				rospy.logfatal(light.state)
 
 			rospy.logwarn("ego car speed")
