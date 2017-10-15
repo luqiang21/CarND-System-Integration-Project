@@ -40,7 +40,10 @@ class WaypointUpdater(object):
 		rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
 		rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-		# TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+		rospy.Subscriber('/vehicle/traffic_lights', Int32, self.traffic_lights_cb)
+
+		rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
+
 
 
 		self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
@@ -78,6 +81,15 @@ class WaypointUpdater(object):
 			for i in range(len(lookahead_waypoints)-199):
 				rospy.logfatal(i)
 				rospy.logwarn(lookahead_waypoints[i].pose.pose.position)
+
+			for i in len(self.traffic_lights):
+				logfatal(i)
+				light = traffic_lights[i]
+				rospy.logfatal(light.pose.position)
+				rospy.logfatal(light.state)
+
+	def traffic_lights_cb(self, msg):
+		self.traffic_lights = msg.lights
 
 	def pose_cb(self, msg):
 		self.current_ego_pose = msg.pose # msg Type is PoseStamped, has header and pose.
