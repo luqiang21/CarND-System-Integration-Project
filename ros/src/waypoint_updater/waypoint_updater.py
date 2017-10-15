@@ -3,7 +3,8 @@
 import rospy
 from tf import transformations
 from geometry_msgs.msg import PoseStamped, TwistStamped
-from styx_msgs.msg import Lane, Waypoint, TrafficLight, TrafficLightArray
+from styx_msgs.msg import Lane, Waypoint
+from std_msgs.msg import Int32
 
 from math import cos, sin
 from copy import deepcopy
@@ -40,7 +41,7 @@ class WaypointUpdater(object):
 		rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
 		rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-		rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
+		rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
 		rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
 
@@ -53,6 +54,8 @@ class WaypointUpdater(object):
 		self.base_waypoints = None
 		self.traffic_lights = None
 		self.frame_id = None
+
+		self.stop_wp_ix = -1 # -1 represents no red traffic_light ahead
 
 		self.current_linear_velocity = None
 		self.current_angular_velocity = None
@@ -85,21 +88,18 @@ class WaypointUpdater(object):
 				rospy.logfatal(i)
 				rospy.logwarn(lookahead_waypoints[i].pose.pose.position)
 
-			rospy.logwarn("traffic lights:")
 
-			for i, light in enumerate(self.traffic_lights):
-				rospy.logfatal(i)
-
-				rospy.logfatal(light.pose.pose.position)
-				rospy.logfatal(light.state)
 
 			rospy.logwarn("ego car speed")
 			rospy.logfatal(self.current_linear_velocity)
 			rospy.logfatal(self.current_angular_velocity)
+			rospy.logwarn("stop_wp_ix")
+			rospy.logfatal(self.stop_wp_ix)
+			# if red light, need to plan stop at stop line.
+			if self.stop_wp_ix != -1:
+				stop_wp = self.base_waypoints[stop_wp_ix]
 
 
-	def traffic_lights_cb(self, msg):
-		self.traffic_lights = msg.lights
 
 	def pose_cb(self, msg):
 		self.current_ego_pose = msg.pose # msg Type is PoseStamped, has header and pose.
@@ -110,8 +110,7 @@ class WaypointUpdater(object):
 
 
 	def traffic_cb(self, msg):
-		# TODO: Callback for /traffic_waypoint message. Implement
-		pass
+		self.stop_wp_ix = msg.data
 
 	def current_velocity_cb(self, msg):
 		self.current_linear_velocity = msg.twist.linear.x
