@@ -2,7 +2,7 @@
 
 import rospy
 from tf import transformations
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane, Waypoint, TrafficLight, TrafficLightArray
 
 from math import cos, sin
@@ -54,6 +54,9 @@ class WaypointUpdater(object):
 		self.traffic_lights = None
 		self.frame_id = None
 
+		self.current_linear_velocity = None
+		self.current_angular_velocity = None
+
 #        rospy.spin()
 		self.loop()
 
@@ -82,11 +85,18 @@ class WaypointUpdater(object):
 				rospy.logfatal(i)
 				rospy.logwarn(lookahead_waypoints[i].pose.pose.position)
 
+			rospy.logwarn("traffic lights:")
+
 			for i in len(self.traffic_lights):
 				logfatal(i)
 				light = traffic_lights[i]
 				rospy.logfatal(light.pose.position)
 				rospy.logfatal(light.state)
+
+			rospy.logwarn("ego car speed")
+			rospy.logfatal(self.current_linear_velocity)
+			rospy.logfatal(self.current_angular_velocity)
+
 
 	def traffic_lights_cb(self, msg):
 		self.traffic_lights = msg.lights
@@ -103,9 +113,9 @@ class WaypointUpdater(object):
 		# TODO: Callback for /traffic_waypoint message. Implement
 		pass
 
-	def obstacle_cb(self, msg):
-		# TODO: Callback for /obstacle_waypoint message. We will implement it later
-		pass
+	def current_velocity_cb(self, msg):
+		self.current_linear_velocity = msg.twist.linear.x
+		self.current_angular_velocity = msg.twist.angular.z
 
 
 	def get_next_waypoints(self, waypoints, i, n):
